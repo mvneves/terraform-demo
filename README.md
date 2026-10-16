@@ -25,8 +25,20 @@ provider "aws" {
   region = "us-east-1"
 }
 
+# Busca a AMI mais recente do Ubuntu 24.04 LTS publicada pela Canonical,
+# em vez de fixar um ID que deixa de existir quando a AMI é descontinuada
+data "aws_ami" "ubuntu" {
+  most_recent = true
+  owners      = ["099720109477"] # Canonical
+
+  filter {
+    name   = "name"
+    values = ["ubuntu/images/hvm-ssd-gp3/ubuntu-noble-24.04-amd64-server-*"]
+  }
+}
+
 resource "aws_instance" "example" {
-  ami           = "ami-007855ac798b5175e" # Ubuntu 22.04 LTS
+  ami           = data.aws_ami.ubuntu.id
   instance_type = "t2.micro"
 
   tags = {
@@ -35,9 +47,21 @@ resource "aws_instance" "example" {
 }
 ```
 
-Neste exemplo, estamos usando o provedor AWS (Amazon Web Services) e criando uma instância EC2 (Elastic Compute Cloud) na região "us-west-1" com o tipo "t2.micro".
+Neste exemplo, estamos usando o provedor AWS (Amazon Web Services) e criando uma instância EC2 (Elastic Compute Cloud) na região "us-east-1" com o tipo "t2.micro".
 
-## 4. Inicializando o Terraform
+O bloco `data "aws_ami"` busca a imagem mais recente do Ubuntu 24.04 LTS publicada pela Canonical. Isso evita fixar o ID de uma AMI no código: as AMIs antigas são descontinuadas e, quando isso acontece, um ID fixo deixa de funcionar.
+
+## 4. Credenciais da AWS
+
+O Terraform usa as mesmas credenciais do AWS CLI. No AWS Academy Learner Lab, as credenciais são temporárias e mudam a cada sessão: em **AWS Details > AWS CLI: Show**, copie os valores e exporte as três variáveis de ambiente (sem o `AWS_SESSION_TOKEN`, o `terraform plan` falha com erro de credencial):
+
+  export AWS_ACCESS_KEY_ID=...
+  export AWS_SECRET_ACCESS_KEY=...
+  export AWS_SESSION_TOKEN=...
+
+No Windows (PowerShell), use `$env:AWS_ACCESS_KEY_ID="..."` e assim por diante. Outra opção é colar o bloco copiado no arquivo `~/.aws/credentials`. Repita este passo sempre que iniciar uma nova sessão do laboratório.
+
+## 5. Inicializando o Terraform
 
 No diretório do projeto, execute o seguinte comando para inicializar o Terraform:
 
@@ -45,13 +69,13 @@ No diretório do projeto, execute o seguinte comando para inicializar o Terrafor
 
 Este comando baixa o provedor necessário (neste caso, o provedor AWS) e cria um diretório chamado ".terraform".
 
-## 5. Verificando a configuração do Terraform
+## 6. Verificando a configuração do Terraform
 
 Antes de aplicar as mudanças, você pode verificar o plano de execução do Terraform com o comando "terraform plan". Isso exibirá as mudanças que serão feitas na sua infraestrutura:
 
   terraform plan
 
-## 6. Aplicando a configuração do Terraform
+## 7. Aplicando a configuração do Terraform
 
 Para aplicar as mudanças, execute o comando "terraform apply". Este comando criará a instância EC2 na sua conta AWS:
 
@@ -59,14 +83,14 @@ Para aplicar as mudanças, execute o comando "terraform apply". Este comando cri
 
 Confirme a ação digitando "yes" quando solicitado.
 
-## 7. Verificando os recursos criados
+## 8. Verificando os recursos criados
 
 Você pode verificar os recursos criados no console AWS ou executando o seguinte comando:
 
   terraform show
 
 
-## 8. Destruindo a infraestrutura criada
+## 9. Destruindo a infraestrutura criada
 
 Para destruir os recursos criados, execute o comando "terraform destroy". Isso excluirá a instância EC2 e quaisquer outros recursos criados:
 
